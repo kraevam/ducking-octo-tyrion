@@ -4,8 +4,10 @@ Created on Apr 17, 2013
 @author: kraevam
 '''
 import sys
+import copy
 sys.path.append("C:\Python27\DLLs")
 import pyodbc
+from table import Table
 
 SERVER_ADDRESS = 'whale.csse.rose-hulman.edu'
 DATABASE_NAME = 'ducking-octo-tyrion'
@@ -42,6 +44,25 @@ def getPrimaryKeys(cursor):
         
     return result
 
+def buildDependencyGraph(tableNames, columnData, pKeys, fKeys):
+    tables = []
+    for table in tableNames:
+        columns = [row.COLUMN_NAME for row in columnData if row.TABLE_NAME == table]
+        thisTable = Table(table, pKeys[table], columns)
+        tables.append(thisTable)
+    for key in fKeys:
+        foreignTable = [table for table in tables if table.tableName == key.FK_TABLE_NAME][0]
+        foreignKey = key.FK_COLUMN_NAME
+        #foreignTable.dependentCount += 1
+        
+        #newForeignTable = copy.deepcopy(foreignTable)
+        #newForeignTable.columns.remove(key.FK_COLUMN_NAME)
+        masterTable = [table for table in tables if table.tableName == key.REFERENCED_TABLE_NAME][0]
+        masterTable.addDependency(foreignTable, foreignKey)
+    #for table in tables:
+    #    table.printTable()
+    return [table for table in tables if table.dependentCount == 0]
+        
 def main():
     connectionString = 'driver=' + DRIVER + ';server=' + SERVER_ADDRESS + ';database=' + DATABASE_NAME + ';uid=' + UID + ';pwd=' + PASSWORD
     cnxn = pyodbc.connect(connectionString)
@@ -52,16 +73,19 @@ def main():
     
     pKeys = getPrimaryKeys(cursor)
     fKeys = getForeignKeys(cursor)
-    
-    for table in tableNames:
+    graph = buildDependencyGraph(tableNames, columnData, pKeys, fKeys)
+    for table in graph:
+        #table.printTable()
+        print table.printScheme("")   
+    '''for table in tableNames:
         print 'Table name: ' + table
         print 'Table columns: ',
         print [row.COLUMN_NAME for row in columnData if row.TABLE_NAME == table]
         print 'Primary key: ', pKeys[table]
         print 
-        
+       
     print 'Foreign keys:'
     for fKey in fKeys:
         print fKey
-                
+    '''           
 main()
