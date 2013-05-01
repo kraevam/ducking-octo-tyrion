@@ -4,10 +4,11 @@ Created on Apr 17, 2013
 @author: kraevam
 '''
 import sys
-import copy
 sys.path.append("C:\Python27\DLLs")
 import pyodbc
 from table import Table
+from table_data_extractor import TableDataExtractor
+import json
 
 SERVER_ADDRESS = 'whale.csse.rose-hulman.edu'
 DATABASE_NAME = 'ducking-octo-tyrion'
@@ -69,14 +70,26 @@ def main():
     cursor = cnxn.cursor()
     
     columnData = getColumnData(cursor)
+    row = columnData[0]
+    #    for i in range(0, len(row.cursor_description)):
+    #       t = row.cursor_description[i];
+    #       jsonData[t[0]] = row[i]
+    #       print "t= ", t[0], ", data= " + row[i]
     tableNames = set(row.TABLE_NAME for row in columnData)
     
     pKeys = getPrimaryKeys(cursor)
     fKeys = getForeignKeys(cursor)
     graph = buildDependencyGraph(tableNames, columnData, pKeys, fKeys)
+    
+    tablesJSON = {}
     for table in graph:
         #table.printTable()
-        print table.printScheme("")   
+        #print table.printScheme("")   
+        tableDataExtractor = TableDataExtractor()
+        result = tableDataExtractor.extractData(cursor, table)
+        tablesJSON[table.tableName] = result
+
+    print json.dumps(tablesJSON, indent=4)          
     '''for table in tableNames:
         print 'Table name: ' + table
         print 'Table columns: ',
