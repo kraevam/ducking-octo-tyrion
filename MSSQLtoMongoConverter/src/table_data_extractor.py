@@ -9,8 +9,16 @@ class TableDataExtractor():
     '''
     Connects to the SQL DB, extracts data and saves it as JSON objects
     '''
-        
-    def extractData(self, cursor, table, columnName="", key=""):
+    
+    def getPrimaryKeyValues(self, cursor, table):
+        primKey = table.primaryKey[0]
+        selectStatement = "SELECT " + primKey + " FROM " + table.tableName
+        cursor.execute(selectStatement)
+        rows = cursor.fetchall()
+        keys = [str(row[0]) for row in rows]
+        return keys
+    
+    def extractData(self, cursor, table, columnName="", key="", excludeColumn=True):
         selectStatement = "SELECT * FROM " + table.tableName
         if key != "":
             selectStatement += " WHERE " + columnName + "=" + str(key)
@@ -23,7 +31,7 @@ class TableDataExtractor():
             jsonData = {}
             for i in range(0, len(row.cursor_description)):
                 t = row.cursor_description[i]
-                if t[0] != columnName:
+                if (not excludeColumn) or t[0] != columnName:
                     jsonData[t[0]] = str(row[i]).strip()
                 
                 if primaryColumn == t[0]:
