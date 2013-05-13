@@ -95,7 +95,7 @@ def main():
     graph = buildDependencyGraph(tableNames, columnData, pKeys, fKeys)
     
     if len(db.collection_names()) < 1:
-        print "Exporting data"        
+        print "Exporting data..."        
         tablesJSON = {}
         for table in graph: 
             tableDataExtractor = TableDataExtractor()
@@ -104,9 +104,11 @@ def main():
 
         for tableName in tablesJSON:
             for entry in tablesJSON[tableName]:
+                print "Inserting table " + tableName + " into Mongo..."
                 db[tableName].insert(entry)
+                print "Done."
     else:
-        print "Checking for changes."
+        print "Checking for changes..."
         delta(graph, cursor, db)
-    print "Done"
+    print "Operation Complete"
 main()
